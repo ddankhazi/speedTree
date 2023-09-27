@@ -72,7 +72,8 @@ class SpeedTreeImporterTranslatorBase(OpenMayaMPx.MPxFileTranslator):
 			filename = filename.replace("<UDIM>", "1001")
 		mc.setAttr(texFile + ".fileTextureName", filename, type = "string")
 		tex2dPlacement = mc.shadingNode("place2dTexture", asUtility = True)
-		mc.connectAttr(tex2dPlacement + ".outUV", texFile + ".uvCoord")
+		mc.defaultNavigation(connectToExisting=True, source=tex2dPlacement, destination=texFile)
+		'''mc.connectAttr(tex2dPlacement + ".outUV", texFile + ".uvCoord")
 		mc.connectAttr(tex2dPlacement + ".outUvFilterSize", texFile + ".uvFilterSize")
 		mc.connectAttr(tex2dPlacement + ".vertexCameraOne", texFile + ".vertexCameraOne")
 		mc.connectAttr(tex2dPlacement + ".vertexUvThree", texFile + ".vertexUvThree")
@@ -83,7 +84,7 @@ class SpeedTreeImporterTranslatorBase(OpenMayaMPx.MPxFileTranslator):
 		mc.connectAttr(tex2dPlacement + ".rotateFrame", texFile + ".rotateFrame")
 		mc.connectAttr(tex2dPlacement + ".offsetV", texFile + ".offsetV")
 		mc.connectAttr(tex2dPlacement + ".offsetU", texFile + ".offsetU")
-		mc.setAttr(tex2dPlacement + ".ihi", 0)
+		mc.setAttr(tex2dPlacement + ".ihi", 0)'''
 		return texFile
 
 	def ConnectMaterial(self, mat, sg):
@@ -213,44 +214,44 @@ class SpeedTreeImporterTranslatorBase(OpenMayaMPx.MPxFileTranslator):
 						if (mat.shader != None):
 							mc.rename(mat.shader, mat.name)
 
+					##############################################
+					# Special Fix for shader assingments
+					# List all Dag nodes
+					all_objects = mc.ls(dag=True, long=True)
+
+					# Create an empty list to store objects with mesh nodes
+					mesh_objects = []
+
+					# Iterate through all objects and check if they have mesh nodes
+					for obj in all_objects:
+						# Use 'listRelatives' to list children of the object
+						children = mc.listRelatives(obj, children=True, fullPath=True) or []
+						
+						# Check if any of the children are of type 'mesh'
+						for child in children:
+							if mc.nodeType(child) == 'mesh':
+								mesh_objects.append(obj)
+								break  # If we find a mesh node, no need to check other children
+
+					# Select the objects with mesh nodes
+					mc.select(mesh_objects, replace=True)
+
+					sel = mc.ls(selection=True)
+
+					if (len(sel) == len(aNewMaterials)):
+						# Iterate through each selected object
+						for each in sel:
+							matName = each + "_MatSG"
+							
+							# Select the current object
+							mc.select(each)
+							
+							# Create and assign a shading group
+							mc.sets(e=True, forceElement=matName)
+
 				except:
 					print("SpeedTree ERROR: Failed to update material connections")
 					#print(sys.exc_info())
-			
-			##############################################
-			# Special Fix for shader assingments
-			# List all Dag nodes
-			all_objects = mc.ls(dag=True, long=True)
-
-			# Create an empty list to store objects with mesh nodes
-			mesh_objects = []
-
-			# Iterate through all objects and check if they have mesh nodes
-			for obj in all_objects:
-				# Use 'listRelatives' to list children of the object
-				children = mc.listRelatives(obj, children=True, fullPath=True) or []
-				
-				# Check if any of the children are of type 'mesh'
-				for child in children:
-					if mc.nodeType(child) == 'mesh':
-						mesh_objects.append(obj)
-						break  # If we find a mesh node, no need to check other children
-
-			# Select the objects with mesh nodes
-			mc.select(mesh_objects, replace=True)
-
-			sel = mc.ls(selection=True)
-
-			if (len(sel) == len(stMaterial)):
-				# Iterate through each selected object
-				for each in sel:
-					matName = each + "_MatSG"
-					
-					# Select the current object
-					mc.select(each)
-					
-					# Create and assign a shading group
-					mc.sets(e=True, forceElement=matName)
 
 		except:
 			print("SpeedTree ERROR: Failed to read SpeedTree stmat file")
